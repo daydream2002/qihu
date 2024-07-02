@@ -1,0 +1,77 @@
+#!/usr/bin/env python 
+# -*- coding: utf-8 -*-
+# @Time    : 2022/8/17 9:09
+# @Author  : Joisen
+# @File    : dataset.py
+
+import os
+import torch
+import torch.utils.data as data
+import numpy as np
+import json
+from feature_extract.feature_extract import *
+from mah_tool.so_lib.lib_MJ import *
+import random, shutil
+
+import os
+import json
+from torch.utils.data import Dataset
+
+
+class HuDataset(Dataset):
+    def __init__(self, file_dir):
+        self.file_dir = file_dir
+        self.file_path_list = []
+
+        # 遍历文件夹获取所有文件的路径
+        for root, dirs, files in os.walk(self.file_dir):
+            for file in files:
+                if file.endswith('.json'):
+                    self.file_path_list.append(os.path.join(root, file))
+
+    def __getitem__(self, idx):
+        file_path = self.file_path_list[idx]  # 文件路径
+        with open(file_path, 'r', encoding='utf-8') as file:
+            # 读取JSON文件
+            info = json.load(file)
+
+        handcards0 = info['handCards0']
+        fulu_ = info['fulu_']
+        king_card = info['king_card']
+        discards_seq = info['discards_seq']
+        remain_card_num = info['remain_card_num']
+        self_king_num = info['self_king_num']
+        fei_king_nums = info['fei_king_nums']
+        round_ = info['round_']
+        dealer_flag = info['dealer_flag']
+        label = info['isHu']
+
+        features = calculate_king_sys_suphx(handcards0, fulu_, king_card, discards_seq, remain_card_num, self_king_num,
+                                            fei_king_nums, round_, dealer_flag, search=False)
+
+        return features, label
+
+    def __len__(self):
+        return len(self.file_path_list)
+
+
+# 读取数据集
+data_dir = '/path/to/your/dataset/hu'
+dataset = HuDataset(data_dir)
+
+if __name__ == '__main__':
+    file_dir = '/home/tonnn/wjh/shangraoqihu/hu'
+    dataset = HuDataset(file_dir)
+    # file_name_list = os.listdir(file_dir)
+    # file_path = os.path.join(file_dir, file_name_list[1])
+    # feature, label = dataset[1]
+    print(len(dataset))
+    train_size = int(0.8 * len(dataset))
+    val_size = int(len(dataset) - train_size)
+    train_dataset, val_dataset = data.random_split(dataset, [train_size, val_size])
+    train_loader = data.DataLoader(train_dataset, batch_size=100, shuffle=True, drop_last=True,
+                                   num_workers=0)  # train需要shuffle
+    # for features, labels in train_loader:
+    # print(labels)
+    #     print()
+    # print()
