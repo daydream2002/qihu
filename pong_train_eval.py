@@ -1,4 +1,4 @@
-#!/usr/bin/env python 
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # @Time    : 2022/8/17 9:08
 # @Author  : Joisen
@@ -11,6 +11,31 @@ from tqdm import tqdm
 import torchvision.models as models
 from dataset import *
 from pong_model import *
+import torch
+import torch.nn as nn
+import os
+import numpy as np
+from collections import Counter
+from torch.utils.data.sampler import WeightedRandomSampler
+
+
+# 过采样器
+class ImbalancedDatasetSampler(torch.utils.data.sampler.Sampler):
+    def __init__(self, dataset):
+        self.dataset = dataset
+        self.indices = list(range(len(self.dataset)))
+        self.num_samples = len(self.indices)
+
+        label_to_count = Counter(self.dataset[i][1] for i in self.indices)
+        weights = [1.0 / label_to_count[self.dataset[i][1]] for i in self.indices]
+        self.weights = torch.DoubleTensor(weights)
+
+    def __iter__(self):
+        return iter(torch.multinomial(self.weights, self.num_samples, replacement=True).tolist())
+
+    def __len__(self):
+        return self.num_samples
+
 
 if __name__ == '__main__':
     writer = SummaryWriter('log')
@@ -18,15 +43,14 @@ if __name__ == '__main__':
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # 数据路径
-    hu_dir = '/home/tonnn/.nas/wjh/qihu/hu/hu'
-    nhu_dir = '/home/tonnn/.nas/wjh/qihu/hu/nhu'
+    hu_dir = '/home/tonnn/.nas/wjh/qihu/hu/hu/hu'
+    nhu_dir = '/home/tonnn/.nas/wjh/qihu/hu/hu/nhu'
 
     # 加载数据集
     hu_dataset = HuDataset(hu_dir)
     nhu_dataset = HuDataset(nhu_dir)
     print(len(hu_dataset))
     print(len(nhu_dataset))
-
 
     # 设置划分比例
     train_ratio = 0.8
@@ -53,36 +77,22 @@ if __name__ == '__main__':
     batch_size = 128
 
     # 创建数据加载器
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, sampler=ImbalancedDatasetSampler(train_dataset))
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
-    # # 设置batch_size
-    # batch_size = 128
-    # # 加载数据集
-    # dataset = HuDataset(data_dir)
-    #
-    # # 划分数据集
-    # train_size = int(0.8 * len(dataset))
-    # val_size = len(dataset) - train_size
-    # train_dataset, val_dataset = data.random_split(dataset, [train_size, val_size])
-    # # 创建 DataLoader
-    # train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, drop_last=True,
-    #                           num_workers=2)  # train需要shuffle
-    # val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=2)
+
     # 定义网络
     # 定义模型并添加Dropout层
     class CustomResNet(nn.Module):
         def __init__(self):
             super(CustomResNet, self).__init__()
-            self.model = models.resnet34(pretrained=True)
+            self.model = models.resnet101(pretrained=True)
             self.model.conv1 = nn.Conv2d(418, 64, kernel_size=7, stride=2, padding=3, bias=False)
             num_ftrs = self.model.fc.in_features
             self.model.fc = nn.Linear(num_ftrs, 2)
-            self.dropout = nn.Dropout(0.5)  # 添加Dropout层
 
         def forward(self, x):
             x = self.model(x)
-            x = self.dropout(x)
             return x
 
 
@@ -91,13 +101,13 @@ if __name__ == '__main__':
     loss = nn.CrossEntropyLoss()
 
     # 设置学习率
-    LR = 0.0008
+    LR = 0.0005
 
     # 定义优化器(随机梯度下降)
-    optim = Adam(model.parameters(), lr=LR, weight_decay=1e-4)
+    optim = Adam(model.parameters(), lr=LR)
 
     # 训练轮次
-    train_round = 30
+    train_round = 40
 
     # 将loss和神经网络放到指定设备上执行
     loss.to(device)
