@@ -14,28 +14,10 @@ from pong_model import *
 import torch
 import torch.nn as nn
 import os
+from resnet import *
 import numpy as np
-from collections import Counter
-from torch.utils.data.sampler import WeightedRandomSampler
-
-
-# 过采样器
-class ImbalancedDatasetSampler(torch.utils.data.sampler.Sampler):
-    def __init__(self, dataset):
-        self.dataset = dataset
-        self.indices = list(range(len(self.dataset)))
-        self.num_samples = len(self.indices)
-
-        label_to_count = Counter(self.dataset[i][1] for i in self.indices)
-        weights = [1.0 / label_to_count[self.dataset[i][1]] for i in self.indices]
-        self.weights = torch.DoubleTensor(weights)
-
-    def __iter__(self):
-        return iter(torch.multinomial(self.weights, self.num_samples, replacement=True).tolist())
-
-    def __len__(self):
-        return self.num_samples
-
+from imblearn.under_sampling import RandomUnderSampler
+from torch.utils.data import Subset
 
 if __name__ == '__main__':
     writer = SummaryWriter('log')
@@ -76,34 +58,28 @@ if __name__ == '__main__':
     # 设置batch_size
     batch_size = 128
 
+    # 欠采样
+    labels = [train_dataset[i][1] for i in range(len(train_dataset))]
+    rus = RandomUnderSampler()
+    indices = list(range(len(train_dataset)))
+    indices_resampled, _ = rus.fit_resample(np.array(indices).reshape(-1, 1), labels)
+    resampled_indices = [int(idx) for idx in indices_resampled]
+
     # 创建数据加载器
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, sampler=ImbalancedDatasetSampler(train_dataset))
+    train_loader = DataLoader(Subset(train_dataset, resampled_indices), batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
-
     # 定义网络
-    # 定义模型并添加Dropout层
-    class CustomResNet(nn.Module):
-        def __init__(self):
-            super(CustomResNet, self).__init__()
-            self.model = models.resnet101(pretrained=True)
-            self.model.conv1 = nn.Conv2d(418, 64, kernel_size=7, stride=2, padding=3, bias=False)
-            num_ftrs = self.model.fc.in_features
-            self.model.fc = nn.Linear(num_ftrs, 2)
-
-        def forward(self, x):
-            x = self.model(x)
-            return x
 
 
-    model = CustomResNet()
+    model = Net()
     # 定义损失函数
     loss = nn.CrossEntropyLoss()
 
     # 设置学习率
-    LR = 0.0005
+    LR = 0.001
 
-    # 定义优化器(随机梯度下降)
+    # 定义优化器
     optim = Adam(model.parameters(), lr=LR)
 
     # 训练轮次
@@ -120,7 +96,7 @@ if __name__ == '__main__':
         loss_sum = 0
         model.train()
         print(f"------训练第{i + 1}开始------")
-        print('训练数据长度：', len(train_dataset))
+        print('训练数据长度：', len(train_loader.dataset))
         for feature, label in tqdm(train_loader):
             # 初始化梯度
             optim.zero_grad()
@@ -145,7 +121,7 @@ if __name__ == '__main__':
         sum_data = 0  # 记录测试样本数
         acc = 0  # 记录准确率
         with torch.no_grad():
-            print('验证数据长度：', len(val_dataset))
+            print('验证数据长度：', len(val_loader.dataset))
             for feature, label in tqdm(val_loader):
                 # 将数据放到指定设备上运算
                 inputs = feature.to(device)
@@ -162,4 +138,3 @@ if __name__ == '__main__':
         torch.save(model, f"./model/model{i}.pth")
     writer.close()
     print("")
-# tensorboard --logdir=D:\product\Python\project\RL-Group\works\pong\log
