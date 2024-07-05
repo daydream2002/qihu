@@ -9,7 +9,7 @@ import torch
 import torch.utils.data as data
 import numpy as np
 import json
-from feature_extract.feature_extract import *
+from feature_extract_me import *
 from mah_tool.so_lib.lib_MJ import *
 import random, shutil
 
@@ -37,6 +37,7 @@ class HuDataset(Dataset):
 
         handcards0 = info['handCards0']
         fulu_ = info['fulu_']
+        discards = info['discards']
         king_card = info['king_card']
         discards_seq = info['discards_seq']
         remain_card_num = info['remain_card_num']
@@ -46,8 +47,8 @@ class HuDataset(Dataset):
         dealer_flag = info['dealer_flag']
         label = info['isHu']
 
-        features = calculate_king_sys_suphx(handcards0, fulu_, king_card, discards_seq, remain_card_num, self_king_num,
-                                            fei_king_nums, round_, dealer_flag, search=False)
+        features = card_preprocess(handcards0, king_card, discards_seq, discards, self_king_num,
+                                   fei_king_nums,fulu_)
 
         return features, label
 
@@ -60,11 +61,12 @@ data_dir = '/path/to/your/dataset/hu'
 dataset = HuDataset(data_dir)
 
 if __name__ == '__main__':
-    file_dir = '/home/tonnn/wjh/shangraoqihu/hu'
+    file_dir = '/home/tonnn/.nas/wjh/qihu/hu/hu/hu'
     dataset = HuDataset(file_dir)
     # file_name_list = os.listdir(file_dir)
     # file_path = os.path.join(file_dir, file_name_list[1])
-    # feature, label = dataset[1]
+    feature, label = dataset[1]
+    print(feature)
     print(len(dataset))
     train_size = int(0.8 * len(dataset))
     val_size = int(len(dataset) - train_size)
