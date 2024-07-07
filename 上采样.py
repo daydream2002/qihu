@@ -14,10 +14,8 @@ from pong_model import *
 import torch
 import torch.nn as nn
 import os
-import extend_work.eat.ResNet
-from extend_work.eat.ResNet import *
+from extend_work.discard.densenet import *
 import numpy as np
-from imblearn.over_sampling import RandomOverSampler
 
 if __name__ == '__main__':
     writer = SummaryWriter('log')
@@ -56,32 +54,26 @@ if __name__ == '__main__':
     print(f"Validation dataset size: {len(val_dataset)}")
 
     # 设置batch_size
-    batch_size = 512
+    batch_size = 128
 
-    # 随机过采样
-    labels = [train_dataset[i][1] for i in range(len(train_dataset))]
-    ros = RandomOverSampler()
-    indices = list(range(len(train_dataset)))
-    indices_resampled, _ = ros.fit_resample(np.array(indices).reshape(-1, 1), labels)
-    resampled_indices = [int(idx) for idx in indices_resampled]
 
     # 创建数据加载器
-    train_loader = DataLoader(Subset(train_dataset, resampled_indices), batch_size=batch_size, shuffle=True)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
     # 定义网络
-    model = ResNet()
+    model = DenseNet121()
     # 定义损失函数
     loss = nn.CrossEntropyLoss()
 
     # 设置学习率
-    LR = 0.0005
+    LR = 0.0006
 
     # 定义优化器
     optim = Adam(model.parameters(), lr=LR)
 
     # 训练轮次
-    train_round = 40
+    train_round = 30
 
     # 将loss和神经网络放到指定设备上执行
     loss.to(device)

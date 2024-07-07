@@ -107,11 +107,11 @@ class DenseNet(nn.Module):
 
 
 def DenseNet121():
-    return DenseNet([6, 12, 24, 16], growth_rate=32, reduction=0.5, num_classes=34)
+    return DenseNet([6, 12, 24, 16], growth_rate=32, reduction=0.5, num_classes=2)
 
 
 def DenseNet4():
-    return DenseNet([6,6,6,6], growth_rate=16, reduction=0.5,num_classes=34)
+    return DenseNet([6,6,6,6], growth_rate=16, reduction=0.5,num_classes=2)
 
 
 

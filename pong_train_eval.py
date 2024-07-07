@@ -14,7 +14,7 @@ from pong_model import *
 import torch
 import torch.nn as nn
 import os
-from resnet import *
+from extend_work.pong.model import *
 import numpy as np
 from imblearn.under_sampling import RandomUnderSampler
 from torch.utils.data import Subset
@@ -71,8 +71,8 @@ if __name__ == '__main__':
 
     # 定义网络
 
+    model = Model_Me(Basic_Layer, 2, 20)
 
-    model = Net()
     # 定义损失函数
     loss = nn.CrossEntropyLoss()
 
@@ -83,7 +83,7 @@ if __name__ == '__main__':
     optim = Adam(model.parameters(), lr=LR)
 
     # 训练轮次
-    train_round = 40
+    train_round = 30
 
     # 将loss和神经网络放到指定设备上执行
     loss.to(device)

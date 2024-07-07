@@ -5,12 +5,12 @@
 # @File    : test.py.py
 
 
-
 import os
 import pandas as pd
 import json
 from feature_extract.feature_extract import *
 import numpy as np
+
 
 def get_dealer(zhuang_id, high_score_id):
     '''
@@ -26,6 +26,7 @@ def get_dealer(zhuang_id, high_score_id):
             retList.append(0)
     return changeSeat(retList, high_score_id)
 
+
 def self_king_num(king_card, handCards0):
     '''
     :param king_card: 宝牌
@@ -37,6 +38,7 @@ def self_king_num(king_card, handCards0):
         if handCards0[i] == king_card:
             ret_num += 1
     return ret_num
+
 
 def get_feiKing_num(disCardReal, kingCard):
     '''
@@ -55,7 +57,7 @@ def get_feiKing_num(disCardReal, kingCard):
 
 
 # 获取牌墙中剩余的牌
-def get_remain_card(discards,fulu,hand_cards):
+def get_remain_card(discards, fulu, hand_cards):
     '''
     :param hand_cards: 各玩家的手牌
     :param discards: 丢弃的牌(不含副露中的牌)
@@ -94,6 +96,7 @@ def changeSeat(cards, seatId):
     ret_list = cards[seatId:] + cards[:seatId]
     return ret_list
 
+
 def get_chi_position(combine_cards, operate_card):
     '''
     :param combine_cards: 进行吃牌动作后形成的组合牌
@@ -102,7 +105,8 @@ def get_chi_position(combine_cards, operate_card):
     '''
     for i in range(len(combine_cards)):
         if combine_cards[i] == operate_card:
-            return i+1
+            return i + 1
+
 
 def can_eat(handCards0, pre_operate_card) -> bool:
     '''
@@ -116,8 +120,8 @@ def can_eat(handCards0, pre_operate_card) -> bool:
         return False
 
     # 判断包含操作牌的顺子是否在手牌中
-    pre_card_2 = pre_operate_card -2
-    pre_card_1 = pre_operate_card -1
+    pre_card_2 = pre_operate_card - 2
+    pre_card_1 = pre_operate_card - 1
     rear_1 = pre_operate_card + 1
     rear_2 = pre_operate_card + 2
     if pre_card_2 in handCards0 and pre_card_1 in handCards0:
@@ -129,10 +133,12 @@ def can_eat(handCards0, pre_operate_card) -> bool:
 
     return False
 
+
 def can_pong(handCards0, op_card):
     if handCards0.count(op_card) == 2:
         return True
     return False
+
 
 # 获取丢牌模型需要的信息
 def get_json_info(data_dir, store_path):
@@ -158,12 +164,12 @@ def get_json_info(data_dir, store_path):
         for bat_info in battle_info:
             # 获取battle_info中的丢牌动作的信息
             if bat_info['action_type'] == 'd' and bat_info['seat_id'] == high_score_seatId:
-                discards = bat_info['discards'] # 弃牌，不含副露中的牌
+                discards = bat_info['discards']  # 弃牌，不含副露中的牌
                 discards_seq = bat_info['discards_real']
-                fulu_ = changeSeat(bat_info['discards_op'], high_score_seatId) # 将高手玩家的副露调整到第一位
-                handCards = changeSeat(bat_info['handcards'], high_score_seatId) # 将高手玩家的牌调整到第一位
-                remain_card_num = get_remain_card(discards,fulu_,handCards)
-                self_kingNum = self_king_num(king_card, handCards[0]) # 高手玩家的宝牌数
+                fulu_ = changeSeat(bat_info['discards_op'], high_score_seatId)  # 将高手玩家的副露调整到第一位
+                handCards = changeSeat(bat_info['handcards'], high_score_seatId)  # 将高手玩家的牌调整到第一位
+                remain_card_num = get_remain_card(discards, fulu_, handCards)
+                self_kingNum = self_king_num(king_card, handCards[0])  # 高手玩家的宝牌数
                 fei_king_nums = get_feiKing_num(discards_seq, king_card)
                 round_ = bat_info['round']
                 operate_card = bat_info['operate_card']
@@ -188,7 +194,8 @@ def get_json_info(data_dir, store_path):
                 with open(storeFile, 'w', encoding="utf-8") as fp:
                     json.dump(storeDict, fp, indent=4)
                     file_num += 1
-    print('数量：',file_num)
+    print('数量：', file_num)
+
 
 # 获取弃胡模型所需要的数据
 def get_json_info_hu(data_dir, store_path):
@@ -250,9 +257,9 @@ def get_json_info_hu(data_dir, store_path):
                     json.dump(storeDict, fp, indent=4)
                     file_num_h += 1
             # 当前动作为摸牌 且 摸牌后向听数为0 且 且下一个动作不是胡牌 且 当前玩家是高手玩家
-            elif bat_info['action_type'] == 'G' and i < len(battle_info) - 1 and battle_info[i + 1][
-                'action_type'] != 'A' and bat_info[
-                'seat_id'] == high_score_seatId:
+            elif (bat_info['action_type'] == 'G' and i < len(battle_info) - 1 and battle_info[i + 1][
+                'action_type'] != 'A'
+                  and bat_info['seat_id'] == high_score_seatId):
                 # 将高手玩家的牌调整到第一位
                 handCards = changeSeat(bat_info['handcards'], high_score_seatId)
                 # 获取高手玩家的手牌：
@@ -301,6 +308,6 @@ def get_json_info_hu(data_dir, store_path):
 
 if __name__ == '__main__':
     for i in range(21):
-        file_path = '/home/tonnn/.nas/wjh/dataset/'+str(i)+'/'
+        file_path = '/home/tonnn/.nas/wjh/dataset/' + str(i) + '/'
         store_path_pong = '/home/tonnn/.nas/wjh/dataset_proccessed/'
         get_json_info_hu(file_path, store_path_pong)
