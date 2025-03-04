@@ -422,15 +422,11 @@ def get_json_info_pong(data_dir, store_path):
 
 
 def get_json_info_hu(data_dir, store_path):
+    global file_num_nh, file_num_h
     # get json file_names
     all_json = os.listdir(data_dir)
-    file_num_nh = 0
-    file_num_h = 0
-
     for j_name in all_json:
-        # open json file
         j = open(data_dir + j_name, encoding='utf-8')
-        # load info in json
         info = json.load(j)
         # 庄家id
         zhuang_id = info['zhuang_id']
@@ -441,7 +437,6 @@ def get_json_info_hu(data_dir, store_path):
         # 获得进行位置调整后的庄家位置
         dealer_flag = get_dealer(zhuang_id, high_score_seatId)
         battle_info = info['battle_info']
-        # 获取不碰时信息的步骤：首先获取每一个丢牌动作信息中的手牌信息(即高手玩家的手牌信息 和 当前丢的牌)，对高手玩家是否可以碰进行判断
         # 遍历一个json文件中battle_info的所有动作
         for i in range(len(battle_info)):
             bat_info = battle_info[i]  # 当前动作信息
@@ -466,6 +461,7 @@ def get_json_info_hu(data_dir, store_path):
                     os.makedirs(dir_name)
                 storeDict = {}
                 storeDict['handCards0'] = handCards0
+                storeDict['handCards'] = handCards
                 storeDict['fulu_'] = fulu_
                 storeDict['king_card'] = king_card
                 storeDict['discards_seq'] = discards_seq
@@ -479,6 +475,7 @@ def get_json_info_hu(data_dir, store_path):
                 with open(storeFile, 'w', encoding="utf-8") as fp:
                     json.dump(storeDict, fp, indent=4)
                     file_num_h += 1
+                print("ishu", file_num_h)
             # 当前动作为摸牌 且 摸牌后向听数为0 且 且下一个动作不是胡牌 且 当前玩家是高手玩家
             elif bat_info['action_type'] == 'G' and i < len(battle_info) - 1 and battle_info[i + 1][
                 'action_type'] != 'A' and bat_info[
@@ -494,10 +491,10 @@ def get_json_info_hu(data_dir, store_path):
                 # 计算向听数是否为0
                 xts1 = wait_types_comm_king(handCards0, fulu_[0], king_card)
                 xts2 = wait_types_7(handCards0, fulu_[0], king_card)
-                xts3 = wait_types_haohua7(handCards0, fulu_[0], king_card)
+                # xts3 = wait_types_haohua7(handCards0, fulu_[0], king_card)
                 xts4 = wait_types_13(handCards0, fulu_[0], king_card)
                 xts5 = wait_types_19(handCards0, fulu_[0], king_card)
-                if min(xts1, xts2, xts3, xts4, xts5) == 0:
+                if min(xts1, xts2, xts4, xts5) == 0:
                     #   将数据写入json文件
                     discards = bat_info['discards']
                     discards_seq = changeSeat(bat_info['discards_real'], high_score_seatId)
@@ -512,6 +509,7 @@ def get_json_info_hu(data_dir, store_path):
                         os.makedirs(dir_name)
                     storeDict = {}
                     storeDict['handCards0'] = handCards0
+                    storeDict['handCards'] = handCards
                     storeDict['fulu_'] = fulu_
                     storeDict['king_card'] = king_card
                     storeDict['discards_seq'] = discards_seq
@@ -525,41 +523,18 @@ def get_json_info_hu(data_dir, store_path):
                     with open(storeFile, 'w', encoding="utf-8") as fp:
                         json.dump(storeDict, fp, indent=4)
                         file_num_nh += 1
+                    print("ishu", file_num_nh)
 
     print('文件数：不胡', file_num_nh, '->胡', file_num_h)
 
 
 if __name__ == '__main__':
-    # 已完成0、1、2、3、4、5、6、7
-    file_path = 'D:\\desktop\\代码和方案\\代码\\RL-Group\\data\\'
-    # store_path = 'D:\\ML\\extend_work\\discard\\'
-    # 获取所有json文件的文件名
-    # all_files = [os.path.join(root, file) for root, dirs, files in os.walk(file_path) for file in files if file.endswith('.json')]
-    # data_list = [json.load(open(file, encoding='utf-8'))for file in all_files]
-    # df = pd.DataFrame(data_list)
+    file_num_nh = 0
+    file_num_h = 0
+    file_path = '/home/zonst/wjh/srmj/data/all/2/'
+    store_path_hu = '/home/zonst/wjh/srmj/data/all/output/'
+    for f in os.listdir(file_path):
+        get_json_info_hu(file_path + f,store_path_hu)
 
-    # get_json_info(file_path, store_path)
-    # 吃牌模型数据提取
-    # store_path_chi = '../../datasets/extract_data_chi/'
-    # store_path_chi = 'D:\\ML\\extend_work\\eat\\'
-    # get_json_info_chi(file_path,store_path_chi)
 
-    # 碰牌模型数据提取
-    store_path_pong = 'D:\\desktop\\代码和方案\\代码\\RL-Group\\hu\\'
-    get_json_info_hu(file_path, store_path_pong)
 
-    # handcard = [2, 6, 6, 9, 17, 18, 22, 25, 33, 38, 20, 24, 19]
-    # if can_pong(handcard, 6):
-    #     print('True')
-    # else:
-    #     print('False')
-
-    # handcard = [2, 6, 7, 9, 17, 18, 22, 25, 33, 38, 20, 24, 19]
-    # if can_eat(handcard, 23):
-    #     print('True')
-    # else:
-    #     print('False')
-
-    # combine_card = [4, 5, 6]
-    # position = get_chi_position(combine_card, 4)
-    # print(position)
