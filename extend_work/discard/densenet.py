@@ -51,7 +51,7 @@ class DenseNet(nn.Module):
 
         num_planes = 128
         self.basic_conv = nn.Sequential(
-            nn.Conv2d(69, 128, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(85, 128, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm2d(num_planes),
             nn.ReLU(inplace=True),
             # nn.MaxPool2d(kernel_size=3, stride=2, padding=1)

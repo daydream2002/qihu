@@ -7,7 +7,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torchvision.models as models
 
 class Basic_Layer(nn.Module):
     def __init__(self):

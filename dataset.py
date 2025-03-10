@@ -36,6 +36,7 @@ class HuDataset(Dataset):
             info = json.load(file)
 
         handcards0 = info['handCards0']
+        handcards = info['handCards']
         fulu_ = info['fulu_']
         discards = info['discards']
         king_card = info['king_card']
@@ -46,9 +47,10 @@ class HuDataset(Dataset):
         round_ = info['round_']
         dealer_flag = info['dealer_flag']
         label = info['isHu']
+        operate_card = info['operate_card']
 
-        features = card_preprocess(handcards0, king_card, discards_seq, discards, self_king_num,
-                                   fei_king_nums,fulu_)
+        features = card_preprocess(handcards0, handcards, king_card, discards_seq, discards, self_king_num,
+                                   fei_king_nums, fulu_, remain_card_num, round_, dealer_flag,operate_card)
 
         return features, label
 

@@ -146,8 +146,9 @@ def card_feature_encode(cards_, channels):
     return features
 
 
-def calculate_feature(handCards0, players_eat, players_pong, players_gang, king_card,
-                      discards_seq, remain_cards, self_kings, players_fei_kings, ):
+def calculate_feature(handCards0, handcards, players_eat, players_pong, players_gang, king_card,
+                      discards_seq, remain_cards, self_kings, players_fei_kings, remain_card_num, round_, dealer_flag,
+                      operate_card):
     '''
     :param handCards0: 高手玩家的手牌 4 *　feature
     :param players_eat: 所有玩家吃的牌 4 *　feature * 4
@@ -166,9 +167,16 @@ def calculate_feature(handCards0, players_eat, players_pong, players_gang, king_
     # 所有特征
     features = []
     # 手牌特征 4 feature
-    handcards_features = card_feature_encode(handCards0, 4)  # 高手玩家手牌的特征 是一个 4 * 9 * 4
+    handcards_features = card_feature_encode(handcards[0], 4)  # 高手玩家手牌的特征 是一个 4 * 9 * 4
     features.extend(handcards_features)
-
+    handcards_features = card_feature_encode(handcards[0], 4)  # 高手玩家手牌的特征 是一个 4 * 9 * 4
+    features.extend(handcards_features)
+    handcards_features = card_feature_encode(handcards[1], 4)  # 高手玩家手牌的特征 是一个 4 * 9 * 4
+    features.extend(handcards_features)
+    handcards_features = card_feature_encode(handcards[2], 4)  # 高手玩家手牌的特征 是一个 4 * 9 * 4
+    features.extend(handcards_features)
+    handcards_features = card_feature_encode(handcards[3], 4)  # 高手玩家手牌的特征 是一个 4 * 9 * 4
+    features.extend(handcards_features)
     # has do 所有玩家吃牌的特征  16 feature
     eat_features = []
     for player_eat in players_eat:
@@ -194,209 +202,210 @@ def calculate_feature(handCards0, players_eat, players_pong, players_gang, king_
         gang_feature = card_feature_encode(gang, 1)
         gang_features.extend(gang_feature)
     features.extend(gang_features)
-
+    #
     # has do 宝牌的特征 1 feature
     king_feature = card_feature_encode(king_card, 1)
     features.extend(king_feature)
-
     # has do 所有玩家丢的牌的特征 16 feature
     dis_feature = []
     for dis in discards_seq:
         dis_feature.extend(card_feature_encode(dis, 4))
     features.extend(dis_feature)
-
+    #
     # has do 未出现牌（剩余牌）的特征 4 feature
     remain_feature = card_feature_encode(remain_cards, 4)
     features.extend(remain_feature)
-
+    #
     # has do 当前玩家的宝牌的特征 4 feature
     self_king_feature = card_feature_encode(self_kings, 4)
     features.extend(self_king_feature)
-
+    #
     # has do 所有玩家飞宝的特征 4 * 4 feature
     fei_king_feature = []
     for fei_king in players_fei_kings:
         fei_king_feature.extend(card_feature_encode(fei_king, 4))
     features.extend(fei_king_feature)
-
+    operate_card = card_feature_encode(operate_card, 1)
+    features.extend(operate_card)
     # return torch.tensor(features, dtype=torch.float).reshape(418, 34, 1)
     return features
 
 
-def card_preprocess(handCards0, king_card, discards_seq, discards, self_king_num, fei_king_nums, fulu):
+def card_preprocess(handCards0, handcards, king_card, discards_seq, discards, self_king_num, fei_king_nums, fulu,
+                    remain_card_num, round_, dealer_flag, operate_card):
     players_eat, players_pong, players_gang = split_eat_pong_gang(fulu)
     players_fei_king = get_players_fei_king(fei_king_nums, king_card)
     self_kings = get_self_King(self_king_num, king_card)
     remain_cards = get_remain_card(fulu, handCards0, discards)
-    features = calculate_feature(handCards0, players_eat, players_pong, players_gang, king_card,
-                                 discards_seq, remain_cards, self_kings, players_fei_king)
-    return torch.tensor(features, dtype=torch.float).reshape(69, 4, 9)
+    features = calculate_feature(handCards0, handcards, players_eat, players_pong, players_gang, king_card,
+                                 discards_seq, remain_cards, self_kings, players_fei_king, remain_card_num, round_,
+                                 dealer_flag, operate_card)
+    return torch.tensor(features, dtype=torch.float).reshape(86, 4, 9)
 
-
-if __name__ == '__main__':
-    # 特征形式
-    # feature = [[0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0],
-    #            [0, 0, 0, 0, 0, 0, 0, 0, 0]]
-    handCards0 = [23, 33, 34, 35]
-    # players_eat = []
-    # players_pong = []
-    # players_gang = []
-    king_card = 36
-    discards_seq = [
-        [
-            52,
-            50,
-            51,
-            5,
-            37,
-            2,
-            1,
-            9,
-            17,
-            5,
-            55
-        ],
-        [
-            55,
-            50,
-            54,
-            49,
-            49,
-            9,
-            21,
-            49,
-            17,
-            41,
-            39
-        ],
-        [
-            55,
-            17,
-            34,
-            49,
-            3,
-            20,
-            40,
-            19,
-            21,
-            2,
-            53
-        ],
-        [
-            53,
-            34,
-            6,
-            25,
-            4,
-            40,
-            54,
-            8,
-            54,
-            54
-        ]
-    ]
-    discards = [
-        [
-            52,
-            50,
-            51,
-            37,
-            2,
-            9,
-            17,
-            5,
-            55
-        ],
-        [
-            55,
-            50,
-            54,
-            49,
-            49,
-            9,
-            21,
-            49,
-            17,
-            41
-        ],
-        [
-            55,
-            17,
-            34,
-            49,
-            40,
-            21,
-            2,
-            53
-        ],
-        [
-            53,
-            34,
-            4,
-            40,
-            54,
-            54,
-            54
-        ]
-    ]  # 34
-    self_king_num = 2
-    fei_king_nums = [0, 0, 1, 0]
-    fulu = [
-        [
-            [
-                4,
-                5,
-                6
-            ],
-            [
-                25,
-                25,
-                25
-            ],
-            [
-                19,
-                19,
-                19
-            ]
-        ],
-        [
-            [
-                1,
-                1,
-                1
-            ],
-            [
-                8,
-                8,
-                8
-            ],
-            [
-                4,
-                5,
-                6
-            ]
-        ],
-        [
-            [
-                39,
-                39,
-                39
-            ]
-        ],
-        [
-            [
-                3,
-                3,
-                3
-            ],
-            [
-                18,
-                19,
-                20
-            ]
-        ]
-    ]  # 27
-
-    features = card_preprocess(handCards0, king_card, discards_seq, discards, self_king_num, fei_king_nums, fulu)
-
-    print(features)
+# if __name__ == '__main__':
+# # 特征形式
+# # feature = [[0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0],
+# #            [0, 0, 0, 0, 0, 0, 0, 0, 0]]
+# handCards0 = [23, 33, 34, 35]
+# # players_eat = []
+# # players_pong = []
+# # players_gang = []
+# king_card = 36
+# discards_seq = [
+#     [
+#         52,
+#         50,
+#         51,
+#         5,
+#         37,
+#         2,
+#         1,
+#         9,
+#         17,
+#         5,
+#         55
+#     ],
+#     [
+#         55,
+#         50,
+#         54,
+#         49,
+#         49,
+#         9,
+#         21,
+#         49,
+#         17,
+#         41,
+#         39
+#     ],
+#     [
+#         55,
+#         17,
+#         34,
+#         49,
+#         3,
+#         20,
+#         40,
+#         19,
+#         21,
+#         2,
+#         53
+#     ],
+#     [
+#         53,
+#         34,
+#         6,
+#         25,
+#         4,
+#         40,
+#         54,
+#         8,
+#         54,
+#         54
+#     ]
+# ]
+# discards = [
+#     [
+#         52,
+#         50,
+#         51,
+#         37,
+#         2,
+#         9,
+#         17,
+#         5,
+#         55
+#     ],
+#     [
+#         55,
+#         50,
+#         54,
+#         49,
+#         49,
+#         9,
+#         21,
+#         49,
+#         17,
+#         41
+#     ],
+#     [
+#         55,
+#         17,
+#         34,
+#         49,
+#         40,
+#         21,
+#         2,
+#         53
+#     ],
+#     [
+#         53,
+#         34,
+#         4,
+#         40,
+#         54,
+#         54,
+#         54
+#     ]
+# ]  # 34
+# self_king_num = 2
+# fei_king_nums = [0, 0, 1, 0]
+# fulu = [
+#     [
+#         [
+#             4,
+#             5,
+#             6
+#         ],
+#         [
+#             25,
+#             25,
+#             25
+#         ],
+#         [
+#             19,
+#             19,
+#             19
+#         ]
+#     ],
+#     [
+#         [
+#             1,
+#             1,
+#             1
+#         ],
+#         [
+#             8,
+#             8,
+#             8
+#         ],
+#         [
+#             4,
+#             5,
+#             6
+#         ]
+#     ],
+#     [
+#         [
+#             39,
+#             39,
+#             39
+#         ]
+#     ],
+#     [
+#         [
+#             3,
+#             3,
+#             3
+#         ],
+#         [
+#             18,
+#             19,
+#             20
+#         ]
+#     ]
+# ]  # 27
+#
+# features = card_preprocess(handCards0, king_card, discards_seq, discards, self_king_num, fei_king_nums, fulu)
+#
+# print(features)

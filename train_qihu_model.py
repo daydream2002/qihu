@@ -1,14 +1,7 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-# @Time    : 2022/8/17 9:08
-# @Author  : Joisen
-# @File    : pong_train_eval.py
-
-from torch.optim import Adam
+from torch.optim import Adam, AdamW
 from torch.utils.data import random_split, DataLoader, Subset
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
-import torchvision.models as models
 from dataset import *
 from pong_model import *
 import torch
@@ -17,14 +10,15 @@ import os
 from extend_work.discard.densenet import *
 import numpy as np
 
+from resnet import ResNet50NoPool
+
 if __name__ == '__main__':
-    writer = SummaryWriter('log')
     # 设置启用设备
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # 数据路径
-    hu_dir = '/home/tonnn/.nas/wjh/qihu/hu/hu/hu'
-    nhu_dir = '/home/tonnn/.nas/wjh/qihu/hu/hu/nhu'
+    hu_dir = '/home/zonst/wjh/srmj/data/all/output/hu'
+    nhu_dir = '/home/zonst/wjh/srmj/data/all/output/nhu'
 
     # 加载数据集
     hu_dataset = HuDataset(hu_dir)
@@ -33,7 +27,7 @@ if __name__ == '__main__':
     print(len(nhu_dataset))
 
     # 设置划分比例
-    train_ratio = 0.8
+    train_ratio = 0.9
 
     # 计算训练和验证集的大小
     hu_train_size = int(train_ratio * len(hu_dataset))
@@ -56,21 +50,20 @@ if __name__ == '__main__':
     # 设置batch_size
     batch_size = 128
 
-
     # 创建数据加载器
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
     # 定义网络
-    model = DenseNet121()
+    model = ResNet50NoPool(1)
     # 定义损失函数
-    loss = nn.CrossEntropyLoss()
+    loss = nn.BCEWithLogitsLoss()
 
     # 设置学习率
-    LR = 0.0006
+    LR = 0.0005
 
     # 定义优化器
-    optim = Adam(model.parameters(), lr=LR)
+    optim = AdamW(model.parameters(), lr=LR, weight_decay=0.01)
 
     # 训练轮次
     train_round = 30
@@ -82,49 +75,49 @@ if __name__ == '__main__':
     if not os.path.exists(model_dir):
         os.makedirs(model_dir)
     for i in range(train_round):
-        # 开始训练
         loss_sum = 0
+        train_correct = 0
+        train_total = 0
         model.train()
         print(f"------训练第{i + 1}开始------")
         print('训练数据长度：', len(train_loader.dataset))
         for feature, label in tqdm(train_loader):
-            # 初始化梯度
             optim.zero_grad()
-            # 将数据放到指定设备上运算
             inputs = feature.to(device)
-            targets = label.to(device)
+            targets = label.to(device).float().unsqueeze(1)  # 调整目标标签的形状
             # 进行训练
             outputs = model(inputs)
             # 计算损失，并计算梯度
             train_loss = loss(outputs, targets)
             train_loss.backward()
-            # 更新参数
             optim.step()
-
-            # 计算总损失
             loss_sum += train_loss.item()
+            # 统计训练准确率
+            predicted = torch.sigmoid(outputs).round()  # 使用 sigmoid 激活函数并四舍五入，得到0或1
+            train_total += targets.size(0)
+            train_correct += (predicted == targets).sum().item()
+        train_accuracy = train_correct / train_total
         print(f"训练损失为:{loss_sum}")
-        writer.add_scalar('sum loss', loss_sum, i)
+        print(f"训练准确率为: {train_accuracy:.4f}")
         # 开始验证
+        # 验证过程中，调整为适合二分类的准确率计算方式
         print(f"----开始第{i + 1}次验证----")
         model.eval()
         sum_data = 0  # 记录测试样本数
-        acc = 0  # 记录准确率
+        acc = 0  # 记录正确数
         with torch.no_grad():
             print('验证数据长度：', len(val_loader.dataset))
             for feature, label in tqdm(val_loader):
-                # 将数据放到指定设备上运算
                 inputs = feature.to(device)
-                targets = label.to(device)
-                # 预测
+                targets = label.to(device).float().unsqueeze(1)  # 确保目标标签为 [batch_size, 1]
+                # 进行预测
                 outputs = model(inputs)
-                # 计算测试样本数
-                sum_data += outputs.shape[0]
-                # 计算正确数
-                acc = (outputs.argmax(1) == targets).sum() + acc
-            acc = acc / sum_data
-            print(f"准确率为:{acc}")
-            writer.add_scalar('Accuracy', acc, i)
+                # 将模型输出的 logits 转换为概率值并四舍五入得到 0 或 1
+                predicted = torch.sigmoid(outputs).round()  # 四舍五入得到二进制预测
+                sum_data += targets.size(0)  # 累计样本数
+                acc += (predicted == targets).sum().item()  # 统计正确预测的样本数
+        # 计算并打印准确率
+        acc = acc / sum_data
+        print(f"验证准确率为:{acc:.4f}")
         torch.save(model, f"./model/model{i}.pth")
-    writer.close()
     print("")
