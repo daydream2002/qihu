@@ -1,16 +1,15 @@
-from torch.optim import Adam, AdamW
-from torch.utils.data import random_split, DataLoader, Subset
-from torch.utils.tensorboard import SummaryWriter
-from tqdm import tqdm
-from dataset import *
-from pong_model import *
-import torch
-import torch.nn as nn
 import os
-from extend_work.discard.densenet import *
-import numpy as np
 
+import torch.backends.cudnn as cudnn
+from torch.optim import AdamW
+from torch.utils.data import random_split, DataLoader
+from tqdm import tqdm
+
+from dataset import *
+from extend_work.discard.densenet import *
 from resnet import ResNet50NoPool
+
+cudnn.benchmark = True
 
 if __name__ == '__main__':
     # 设置启用设备
@@ -56,6 +55,9 @@ if __name__ == '__main__':
 
     # 定义网络
     model = ResNet50NoPool(1)
+    # 使用 DataParallel 封装
+    model = nn.DataParallel(model, device_ids=[0, 1])  # 假设两张卡分别是 GPU 0 和 GPU 1
+    model = model.cuda()  # 将模型放到 GPU 上
     # 定义损失函数
     loss = nn.BCEWithLogitsLoss()
 
