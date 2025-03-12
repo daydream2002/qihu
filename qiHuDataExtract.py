@@ -120,6 +120,8 @@ def get_json_info_hu(data_dir, store_path):
             if bat_info['action_type'] == 'A' and bat_info['seat_id'] == high_score_seatId:
                 # 获取当前动作的手牌信息
                 handCards = changeSeat(bat_info['handcards'], high_score_seatId)  # 将高手玩家的牌调整到第一位
+                for sublist in handCards:
+                    sublist.sort()
                 # 获取高手玩家的手牌：
                 handCards0 = handCards[0]
                 #   将数据写入json文件
@@ -161,6 +163,8 @@ def get_json_info_hu(data_dir, store_path):
                 if bat_info['operate_card'] != king_card:
                     # 将高手玩家的牌调整到第一位
                     handCards = changeSeat(bat_info['handcards'], high_score_seatId)
+                    for sublist in handCards:
+                        sublist.sort()
                     # 获取高手玩家的手牌：
                     handCards0 = handCards[0]
                     # 高手玩家的副露调整到第一位
@@ -170,8 +174,8 @@ def get_json_info_hu(data_dir, store_path):
                     # 计算向听数是否为0
                     xts1 = wait_types_comm_king(handCards0, fulu_[0], king_card)
                     xts2 = wait_types_7(handCards0, fulu_[0], king_card)
-                    xts4 = wait_types_13(handCards0, fulu_[0], king_card)
-                    xts5 = wait_types_19(handCards0, fulu_[0], king_card)
+                    xts4 = wait_types_13(handCards0, fulu_[0], 0)
+                    xts5 = wait_types_19(handCards0, fulu_[0], 0)
                     if min(xts1, xts2, xts4, xts5) == 0:
                         #   将数据写入json文件
                         discards = bat_info['discards']
@@ -206,6 +210,8 @@ def get_json_info_hu(data_dir, store_path):
                 # 当前摸到的手牌是宝牌
                 else:
                     handCards = changeSeat(bat_info['handcards'], high_score_seatId)
+                    for sublist in handCards:
+                        sublist.sort()
                     # 获取高手玩家的手牌：
                     handCards0 = handCards[0]
                     self_kingNum = self_king_num(king_card, handCards[0])
@@ -218,9 +224,8 @@ def get_json_info_hu(data_dir, store_path):
                         # 计算向听数是否为0
                         xts1 = wait_types_comm_king(handCards0, fulu_[0], king_card)
                         xts2 = wait_types_7(handCards0, fulu_[0], king_card)
-                        # xts3 = wait_types_haohua7(handCards0, fulu_[0], king_card)
-                        xts4 = wait_types_13(handCards0, fulu_[0], king_card)
-                        xts5 = wait_types_19(handCards0, fulu_[0], king_card)
+                        xts4 = wait_types_13(handCards0, fulu_[0], 0)
+                        xts5 = wait_types_19(handCards0, fulu_[0], 0)
                         if min(xts1, xts2, xts4, xts5) == 0:
                             #   将数据写入json文件
                             discards = bat_info['discards']
@@ -251,6 +256,7 @@ def get_json_info_hu(data_dir, store_path):
                                 json.dump(storeDict, fp, indent=4)
                                 file_num_nh += 1
                             print("isnh", file_num_nh)
+                    # 刚摸到的宝牌下一圈才能当成宝调
                     elif self_kingNum == 1:
                         # 高手玩家的副露调整到第一位
                         fulu_ = changeSeat(bat_info['discards_op'], high_score_seatId)
