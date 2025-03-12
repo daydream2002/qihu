@@ -251,6 +251,14 @@ def card_preprocess(handCards0, handcards, king_card, discards_seq, discards, se
                                  dealer_flag, operate_card)
     return torch.tensor(features, dtype=torch.float).reshape(88, 4, 9)
 
+
+def extra_feature_encode_4_9(value):
+    """
+    将一个标量值扩展为 4 个 9 维向量，每个向量都重复这个标量。
+    """
+    # 你也可以在这里先对 value 进行归一化处理
+    return [[float(value)] * 9 for _ in range(4)]
+
 # if __name__ == '__main__':
 # # 特征形式
 # # feature = [[0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0],
