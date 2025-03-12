@@ -167,7 +167,7 @@ def calculate_feature(handCards0, handcards, players_eat, players_pong, players_
     # 所有特征
     features = []
     # 手牌特征 4 feature
-    handcards_features = card_feature_encode(handcards[0], 4)  # 高手玩家手牌的特征 是一个 4 * 9 * 4
+    handcards_features = card_feature_encode(handCards0, 4)  # 高手玩家手牌的特征 是一个 4 * 9 * 4
     features.extend(handcards_features)
     handcards_features = card_feature_encode(handcards[0], 4)  # 高手玩家手牌的特征 是一个 4 * 9 * 4
     features.extend(handcards_features)
@@ -228,6 +228,15 @@ def calculate_feature(handCards0, handcards, players_eat, players_pong, players_
     operate_card = card_feature_encode(operate_card, 1)
     features.extend(operate_card)
     # return torch.tensor(features, dtype=torch.float).reshape(418, 34, 1)
+    # 编码 remain_card_num, round_, dealer_flag 为 4*9 大小的特征
+    remain_features = extra_feature_encode_4_9(remain_card_num/136.0)
+    round_features = extra_feature_encode_4_9(round_/10.0)
+    # dealer_features = extra_feature_encode_4_9(dealer_flag)
+
+    # 将这三个额外特征拼接到 features 中（注意顺序可以根据需要调整）
+    features.extend([remain_features])
+    features.extend([round_features])
+    # features.extend(dealer_features)
     return features
 
 
@@ -240,7 +249,7 @@ def card_preprocess(handCards0, handcards, king_card, discards_seq, discards, se
     features = calculate_feature(handCards0, handcards, players_eat, players_pong, players_gang, king_card,
                                  discards_seq, remain_cards, self_kings, players_fei_king, remain_card_num, round_,
                                  dealer_flag, operate_card)
-    return torch.tensor(features, dtype=torch.float).reshape(86, 4, 9)
+    return torch.tensor(features, dtype=torch.float).reshape(88, 4, 9)
 
 # if __name__ == '__main__':
 # # 特征形式

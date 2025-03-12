@@ -52,7 +52,7 @@ class ResNet50NoPool(nn.Module):
         super(ResNet50NoPool, self).__init__()
         self.inplanes = 64
         # 修改初始卷积层：输入通道数改为85
-        self.conv1 = nn.Conv2d(86, 64, kernel_size=7, stride=2, padding=3, bias=False)
+        self.conv1 = nn.Conv2d(88, 64, kernel_size=7, stride=2, padding=3, bias=False)
         self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU(inplace=True)
         # 删除maxpool层

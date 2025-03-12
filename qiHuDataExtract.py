@@ -6,7 +6,12 @@
 
 import os
 import pandas as pd
-import json
+import ujson as json
+# 或者
+from concurrent.futures import ProcessPoolExecutor
+import os
+# import orjson
+
 from feature_extract.feature_extract import *
 import numpy as np
 from feature_extract.cal_xts import *
