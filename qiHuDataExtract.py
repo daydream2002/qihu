@@ -115,6 +115,7 @@ def get_json_info_hu(data_dir, store_path):
         king_card = info['king_card']
         # 获取高分选手的位置
         high_score_seatId = get_high_score_seatId(info['players_id'], info['high_score_player_id'])
+        high_score = info["grade"][high_score_seatId]
         # 获得进行位置调整后的庄家位置
         dealer_flag = get_dealer(zhuang_id, high_score_seatId)
         battle_info = info['battle_info']
@@ -155,6 +156,7 @@ def get_json_info_hu(data_dir, store_path):
                 storeDict['discards'] = discards
                 storeDict['round_'] = round_
                 storeDict['dealer_flag'] = dealer_flag
+                storeDict['high_score'] = high_score
                 storeDict['isHu'] = 1  # 胡牌为1
                 with open(storeFile, 'w', encoding="utf-8") as fp:
                     json.dump(storeDict, fp, indent=4)
@@ -207,6 +209,7 @@ def get_json_info_hu(data_dir, store_path):
                         storeDict['discards'] = discards
                         storeDict['round_'] = round_
                         storeDict['dealer_flag'] = dealer_flag
+                        storeDict['high_score'] = high_score
                         storeDict['isHu'] = 0  # 弃胡为0
                         with open(storeFile, 'w', encoding="utf-8") as fp:
                             json.dump(storeDict, fp, indent=4)
@@ -256,6 +259,7 @@ def get_json_info_hu(data_dir, store_path):
                             storeDict['discards'] = discards
                             storeDict['round_'] = round_
                             storeDict['dealer_flag'] = dealer_flag
+                            storeDict['high_score'] = high_score
                             storeDict['isHu'] = 0  # 弃胡为0
                             with open(storeFile, 'w', encoding="utf-8") as fp:
                                 json.dump(storeDict, fp, indent=4)
@@ -298,6 +302,7 @@ def get_json_info_hu(data_dir, store_path):
                             storeDict['discards'] = discards
                             storeDict['round_'] = round_
                             storeDict['dealer_flag'] = dealer_flag
+                            storeDict['high_score'] = high_score
                             storeDict['isHu'] = 0  # 弃胡为0
                             with open(storeFile, 'w', encoding="utf-8") as fp:
                                 json.dump(storeDict, fp, indent=4)

@@ -1,9 +1,3 @@
-#!/usr/bin/env python 
-# -*- coding: utf-8 -*-
-# @Time    : 2022/8/17 16:17
-# @Author  : Joisen
-# @File    : feature_extract_me.py
-
 import copy
 import numpy as np
 # from feature.extract import get_param

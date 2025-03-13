@@ -1,15 +1,5 @@
-#!/usr/bin/env python 
-# -*- coding: utf-8 -*-
-# @Time    : 2022/7/30 10:49
-# @Author  : Joisen
-# @File    : test.py.py
-
-
-import os
-import pandas as pd
 import json
-from feature_extract.feature_extract import *
-import numpy as np
+import os
 
 
 def get_dealer(zhuang_id, high_score_id):
