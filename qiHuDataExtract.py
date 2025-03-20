@@ -115,7 +115,10 @@ def get_json_info_hu(data_dir, store_path):
         king_card = info['king_card']
         # 获取高分选手的位置
         high_score_seatId = get_high_score_seatId(info['players_id'], info['high_score_player_id'])
-        high_score = info["grade"][high_score_seatId]
+        if high_score_seatId < len(info["grade"]):
+            high_score = info["grade"][high_score_seatId]
+        else:
+            continue
         # 获得进行位置调整后的庄家位置
         dealer_flag = get_dealer(zhuang_id, high_score_seatId)
         battle_info = info['battle_info']

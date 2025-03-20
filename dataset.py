@@ -45,7 +45,49 @@ class HuDataset(Dataset):
         operate_card = info['operate_card']
 
         features = card_preprocess(handcards0, handcards, king_card, discards_seq, discards, self_king_num,
-                                   fei_king_nums, fulu_, remain_card_num, round_, dealer_flag,operate_card)
+                                   fei_king_nums, fulu_, remain_card_num, round_, dealer_flag, operate_card, label)
+
+        return features, label
+
+    def __len__(self):
+        return len(self.file_path_list)
+
+
+class ScoreDataset(Dataset):
+    def __init__(self, file_dir):
+        self.file_dir = file_dir
+        self.file_path_list = []
+
+        # 遍历文件夹获取所有文件的路径
+        for root, dirs, files in os.walk(self.file_dir):
+            for file in files:
+                if file.endswith('.json'):
+                    self.file_path_list.append(os.path.join(root, file))
+
+    def __getitem__(self, idx):
+        file_path = self.file_path_list[idx]  # 文件路径
+        with open(file_path, 'r', encoding='utf-8') as file:
+            # 读取JSON文件
+            info = json.load(file)
+
+        handcards0 = info['handCards0']
+        handcards = info['handCards']
+        fulu_ = info['fulu_']
+        discards = info['discards']
+        king_card = info['king_card']
+        discards_seq = info['discards_seq']
+        remain_card_num = info['remain_card_num']
+        self_king_num = info['self_king_num']
+        fei_king_nums = info['fei_king_nums']
+        round_ = info['round_']
+        dealer_flag = info['dealer_flag']
+        label = info['high_score']
+        is_hu = info['isHu']
+        operate_card = info['operate_card']
+
+        features = card_preprocess_score(handcards0, handcards, king_card, discards_seq, discards, self_king_num,
+                                         fei_king_nums, fulu_, remain_card_num, round_, dealer_flag, operate_card,
+                                         is_hu)
 
         return features, label
 

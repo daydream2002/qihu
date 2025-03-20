@@ -4,6 +4,8 @@ import numpy as np
 from mah_tool.suphx_extract_features import tool
 from mah_tool.suphx_extract_features.search_tree_ren import SearchInfo
 import torch
+import torch.nn as nn
+from resnet import ResNet50NoPool
 
 '''
     card_preprocess_sr_suphx(handCards0, fulu_, king_card, discards_seq, remain_card_num,
@@ -142,7 +144,7 @@ def card_feature_encode(cards_, channels):
 
 def calculate_feature(handCards0, handcards, players_eat, players_pong, players_gang, king_card,
                       discards_seq, remain_cards, self_kings, players_fei_kings, remain_card_num, round_, dealer_flag,
-                      operate_card):
+                      operate_card, is_hu):
     '''
     :param handCards0: 高手玩家的手牌 4 *　feature
     :param players_eat: 所有玩家吃的牌 4 *　feature * 4
@@ -223,27 +225,140 @@ def calculate_feature(handCards0, handcards, players_eat, players_pong, players_
     features.extend(operate_card)
     # return torch.tensor(features, dtype=torch.float).reshape(418, 34, 1)
     # 编码 remain_card_num, round_, dealer_flag 为 4*9 大小的特征
-    remain_features = extra_feature_encode_4_9(remain_card_num/136.0)
-    round_features = extra_feature_encode_4_9(round_/10.0)
+    remain_features = extra_feature_encode_4_9(remain_card_num / 136.0)
+    round_features = extra_feature_encode_4_9(round_ / 10.0)
     # dealer_features = extra_feature_encode_4_9(dealer_flag)
 
     # 将这三个额外特征拼接到 features 中（注意顺序可以根据需要调整）
     features.extend([remain_features])
     features.extend([round_features])
     # features.extend(dealer_features)
+    # is_hu_feature = extra_feature_encode_4_9(is_hu)
+    # features.extend([is_hu_feature])
+
+    return features
+
+
+def calculate_feature_score(handCards0, handcards, players_eat, players_pong, players_gang, king_card,
+                            discards_seq, remain_cards, self_kings, players_fei_kings, remain_card_num, round_,
+                            dealer_flag,
+                            operate_card, is_hu):
+    '''
+    :param handCards0: 高手玩家的手牌 4 *　feature
+    :param players_eat: 所有玩家吃的牌 4 *　feature * 4
+    :param players_pong: 所有玩家碰的牌 4 *　feature
+    :param players_gang: 所有玩家杠的牌 4 *　feature
+    :param king_card: 宝牌 1 * feature
+    :param discards_seq: 所有玩家丢的牌 4 *　feature * 4
+    :param remain_cards: 剩余的牌 4 *　feature
+    :param self_kings: 当前玩家的宝牌数 4 * feature
+    :param players_fei_kings: 所有玩家的飞宝 4 * 4 *　feature
+    :return:
+    '''
+    # 特征形式
+    feature = [[0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0],
+               [0, 0, 0, 0, 0, 0, 0, 0, 0]]
+    # 所有特征
+    features = []
+    # 手牌特征 4 feature
+    handcards_features = card_feature_encode(handCards0, 4)  # 高手玩家手牌的特征 是一个 4 * 9 * 4
+    features.extend(handcards_features)
+    handcards_features = card_feature_encode(handcards[0], 4)  # 高手玩家手牌的特征 是一个 4 * 9 * 4
+    features.extend(handcards_features)
+    handcards_features = card_feature_encode(handcards[1], 4)  # 高手玩家手牌的特征 是一个 4 * 9 * 4
+    features.extend(handcards_features)
+    handcards_features = card_feature_encode(handcards[2], 4)  # 高手玩家手牌的特征 是一个 4 * 9 * 4
+    features.extend(handcards_features)
+    handcards_features = card_feature_encode(handcards[3], 4)  # 高手玩家手牌的特征 是一个 4 * 9 * 4
+    features.extend(handcards_features)
+    # has do 所有玩家吃牌的特征  16 feature
+    eat_features = []
+    for player_eat in players_eat:
+        eat_feature = []  # 单个玩家吃牌的特征
+        for eat in player_eat:
+            eat_feature.extend(card_feature_encode(eat, 1))
+        pad_len = 4 - len(player_eat)
+        for i in range(pad_len):
+            eat_feature.append(feature)
+        eat_features.extend(eat_feature)
+    features.extend(eat_features)
+
+    # has do 所有玩家碰牌的特征 4 feature
+    pong_features = []
+    for pong in players_pong:
+        pong_feature = card_feature_encode(pong, 1)
+        pong_features.extend(pong_feature)
+    features.extend(pong_features)
+
+    # has do 所有玩家杠牌的特征 4 feature
+    gang_features = []
+    for gang in players_gang:
+        gang_feature = card_feature_encode(gang, 1)
+        gang_features.extend(gang_feature)
+    features.extend(gang_features)
+    #
+    # has do 宝牌的特征 1 feature
+    king_feature = card_feature_encode(king_card, 1)
+    features.extend(king_feature)
+    # has do 所有玩家丢的牌的特征 16 feature
+    dis_feature = []
+    for dis in discards_seq:
+        dis_feature.extend(card_feature_encode(dis, 4))
+    features.extend(dis_feature)
+    #
+    # has do 未出现牌（剩余牌）的特征 4 feature
+    remain_feature = card_feature_encode(remain_cards, 4)
+    features.extend(remain_feature)
+    #
+    # has do 当前玩家的宝牌的特征 4 feature
+    self_king_feature = card_feature_encode(self_kings, 4)
+    features.extend(self_king_feature)
+    #
+    # has do 所有玩家飞宝的特征 4 * 4 feature
+    fei_king_feature = []
+    for fei_king in players_fei_kings:
+        fei_king_feature.extend(card_feature_encode(fei_king, 4))
+    features.extend(fei_king_feature)
+    operate_card = card_feature_encode(operate_card, 1)
+    features.extend(operate_card)
+    # return torch.tensor(features, dtype=torch.float).reshape(418, 34, 1)
+    # 编码 remain_card_num, round_, dealer_flag 为 4*9 大小的特征
+    remain_features = extra_feature_encode_4_9(remain_card_num / 136.0)
+    round_features = extra_feature_encode_4_9(round_ / 10.0)
+    # dealer_features = extra_feature_encode_4_9(dealer_flag)
+
+    # 将这三个额外特征拼接到 features 中（注意顺序可以根据需要调整）
+    features.extend([remain_features])
+    features.extend([round_features])
+    # features.extend(dealer_features)
+    is_hu_feature = extra_feature_encode_4_9(is_hu)
+    features.extend([is_hu_feature])
     return features
 
 
 def card_preprocess(handCards0, handcards, king_card, discards_seq, discards, self_king_num, fei_king_nums, fulu,
-                    remain_card_num, round_, dealer_flag, operate_card):
+                    remain_card_num, round_, dealer_flag, operate_card, is_hu):
     players_eat, players_pong, players_gang = split_eat_pong_gang(fulu)
     players_fei_king = get_players_fei_king(fei_king_nums, king_card)
     self_kings = get_self_King(self_king_num, king_card)
     remain_cards = get_remain_card(fulu, handCards0, discards)
     features = calculate_feature(handCards0, handcards, players_eat, players_pong, players_gang, king_card,
                                  discards_seq, remain_cards, self_kings, players_fei_king, remain_card_num, round_,
-                                 dealer_flag, operate_card)
+                                 dealer_flag, operate_card, is_hu)
     return torch.tensor(features, dtype=torch.float).reshape(88, 4, 9)
+
+
+def card_preprocess_score(handCards0, handcards, king_card, discards_seq, discards, self_king_num, fei_king_nums, fulu,
+                          remain_card_num, round_, dealer_flag, operate_card, is_hu):
+    players_eat, players_pong, players_gang = split_eat_pong_gang(fulu)
+    players_fei_king = get_players_fei_king(fei_king_nums, king_card)
+    self_kings = get_self_King(self_king_num, king_card)
+    remain_cards = get_remain_card(fulu, handCards0, discards)
+    features = calculate_feature_score(handCards0, handcards, players_eat, players_pong, players_gang, king_card,
+                                       discards_seq, remain_cards, self_kings, players_fei_king, remain_card_num,
+                                       round_,
+                                       dealer_flag, operate_card, is_hu)
+    return torch.tensor(features, dtype=torch.float).reshape(89, 4, 9)
 
 
 def extra_feature_encode_4_9(value):
@@ -253,170 +368,5 @@ def extra_feature_encode_4_9(value):
     # 你也可以在这里先对 value 进行归一化处理
     return [[float(value)] * 9 for _ in range(4)]
 
-# if __name__ == '__main__':
-# # 特征形式
-# # feature = [[0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0, 0],
-# #            [0, 0, 0, 0, 0, 0, 0, 0, 0]]
-# handCards0 = [23, 33, 34, 35]
-# # players_eat = []
-# # players_pong = []
-# # players_gang = []
-# king_card = 36
-# discards_seq = [
-#     [
-#         52,
-#         50,
-#         51,
-#         5,
-#         37,
-#         2,
-#         1,
-#         9,
-#         17,
-#         5,
-#         55
-#     ],
-#     [
-#         55,
-#         50,
-#         54,
-#         49,
-#         49,
-#         9,
-#         21,
-#         49,
-#         17,
-#         41,
-#         39
-#     ],
-#     [
-#         55,
-#         17,
-#         34,
-#         49,
-#         3,
-#         20,
-#         40,
-#         19,
-#         21,
-#         2,
-#         53
-#     ],
-#     [
-#         53,
-#         34,
-#         6,
-#         25,
-#         4,
-#         40,
-#         54,
-#         8,
-#         54,
-#         54
-#     ]
-# ]
-# discards = [
-#     [
-#         52,
-#         50,
-#         51,
-#         37,
-#         2,
-#         9,
-#         17,
-#         5,
-#         55
-#     ],
-#     [
-#         55,
-#         50,
-#         54,
-#         49,
-#         49,
-#         9,
-#         21,
-#         49,
-#         17,
-#         41
-#     ],
-#     [
-#         55,
-#         17,
-#         34,
-#         49,
-#         40,
-#         21,
-#         2,
-#         53
-#     ],
-#     [
-#         53,
-#         34,
-#         4,
-#         40,
-#         54,
-#         54,
-#         54
-#     ]
-# ]  # 34
-# self_king_num = 2
-# fei_king_nums = [0, 0, 1, 0]
-# fulu = [
-#     [
-#         [
-#             4,
-#             5,
-#             6
-#         ],
-#         [
-#             25,
-#             25,
-#             25
-#         ],
-#         [
-#             19,
-#             19,
-#             19
-#         ]
-#     ],
-#     [
-#         [
-#             1,
-#             1,
-#             1
-#         ],
-#         [
-#             8,
-#             8,
-#             8
-#         ],
-#         [
-#             4,
-#             5,
-#             6
-#         ]
-#     ],
-#     [
-#         [
-#             39,
-#             39,
-#             39
-#         ]
-#     ],
-#     [
-#         [
-#             3,
-#             3,
-#             3
-#         ],
-#         [
-#             18,
-#             19,
-#             20
-#         ]
-#     ]
-# ]  # 27
-#
-# features = card_preprocess(handCards0, king_card, discards_seq, discards, self_king_num, fei_king_nums, fulu)
-#
-# print(features)
+
+
